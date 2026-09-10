@@ -8,8 +8,12 @@ const { buildMagicPacket, validateTarget } = require('../src/core/wol.js');
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 480,
-    height: 800,
+    width: 1120,
+    height: 820,
+    minWidth: 380,
+    minHeight: 560,
+    backgroundColor: '#0b0f16',
+    autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs') },
   });
   win.loadFile(path.join(__dirname, '..', 'src', 'ui', 'index.html'));

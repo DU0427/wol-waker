@@ -2,6 +2,7 @@ package com.wolwaker.app;
 
 import android.webkit.JavascriptInterface;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.net.DatagramPacket;
@@ -93,7 +94,7 @@ public class WolAndroidBridge {
             String host = o.getString("host").trim();
             int timeout = o.optInt("timeoutMs", 3000);
             boolean online = false;
-            int[] ports = {3389, 22};
+            int[] ports = parsePorts(o);
             for (int p : ports) {
                 try {
                     Socket s = new Socket();
@@ -120,6 +121,23 @@ public class WolAndroidBridge {
                 return "{\"online\":false,\"latencyMs\":0}";
             }
         }
+    }
+
+    /** 读取前端传来的检查端口数组；缺省时回退到 3389/22 */
+    private static int[] parsePorts(JSONObject o) {
+        JSONArray arr = o.optJSONArray("tcpPorts");
+        if (arr == null || arr.length() == 0) return new int[]{3389, 22};
+        int[] out = new int[arr.length()];
+        int n = 0;
+        for (int i = 0; i < arr.length(); i++) {
+            int p = arr.optInt(i, -1);
+            if (p >= 1 && p <= 65535) out[n++] = p;
+        }
+        if (n == 0) return new int[]{3389, 22};
+        if (n == out.length) return out;
+        int[] trimmed = new int[n];
+        System.arraycopy(out, 0, trimmed, 0, n);
+        return trimmed;
     }
 
     private static String errorJson(String msg) {

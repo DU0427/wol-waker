@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>wol-waker · 远程唤醒</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<header class="top">
+  <h1>wol-waker</h1>
+  <p class="sub">UDP 直发魔术包 · 无需后端</p>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <h2>设备</h2>
+    <div id="list" class="list"></div>
+  </section>
+
+  <section class="card">
+    <h2 id="formTitle">新增设备</h2>
+    <form id="form" autocomplete="off">
+      <label>别名<input id="fName" placeholder="家里的电脑" maxlength="32" /></label>
+      <label>域名 / IP<input id="fHost" placeholder="xxx.ddns.net" required /></label>
+      <label>端口<input id="fPort" type="number" value="9" min="1" max="65535" required /></label>
+      <label>MAC<input id="fMac" placeholder="AA:BB:CC:DD:EE:FF" required /></label>
+      <label>SecureOn（可选）<input id="fSecure" placeholder="留空即无密码" /></label>
+      <div class="row">
+        <button type="submit" class="primary">保存</button>
+        <button type="button" id="btnReset" class="ghost">清空</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>日志</h2>
+    <div id="log" class="log"></div>
+    <div class="row">
+      <button id="btnClearLog" class="ghost">清空日志</button>
+    </div>
+  </section>
+</main>
+
+<script src="../core/wol.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

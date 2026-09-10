@@ -14,5 +14,25 @@
     "electron-builder": "^24.0.0",
     "@capacitor/cli": "^6.0.0",
     "@capacitor/core": "^6.0.0"
+  },
+  "build": {
+    "appId": "com.wolwaker.app",
+    "productName": "wol-waker",
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "wol-waker-${version}-win-x64.exe"
+    }
   }
 }

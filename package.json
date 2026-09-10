@@ -5,15 +5,19 @@
   "main": "electron/main.cjs",
   "scripts": {
     "test": "node src/core/core.test.mjs",
-    "electron": "electron .",
-    "dist:win": "electron-builder --win portable",
-    "cap:sync": "npx cap sync"
+    "sync:web": "node scripts/sync-web.mjs",
+    "electron": "npm run sync:web && electron .",
+    "dist:win": "npm run sync:web && electron-builder --win portable",
+    "icons": "electron scripts/render-icon.cjs && node scripts/make-android-icons.cjs && node scripts/make-ico.cjs",
+    "cap:add": "npm run sync:web && npx cap add android",
+    "cap:sync": "npm run sync:web && npx cap sync android"
   },
   "devDependencies": {
-    "electron": "^31.0.0",
-    "electron-builder": "^24.0.0",
+    "@capacitor/android": "^6.2.2",
     "@capacitor/cli": "^6.0.0",
-    "@capacitor/core": "^6.0.0"
+    "@capacitor/core": "^6.0.0",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.0.0"
   },
   "build": {
     "appId": "com.wolwaker.app",
@@ -24,10 +28,13 @@
       "package.json"
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ]
     },

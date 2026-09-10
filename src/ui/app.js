@@ -353,6 +353,12 @@ function attachMacInput(el) {
 /* ── 事件绑定 ───────────────────────────── */
 $('btnAdd').onclick = () => openForm(null);
 $('btnClearLog').onclick = () => { $('log').textContent = ''; };
+// 窄屏可收起终端；收起时终端完全消失，设备列表占满
+$('btnToggleLog').onclick = () => {
+  const panel = document.querySelector('.terminal-panel');
+  const collapsed = panel.classList.toggle('collapsed');
+  $('btnToggleLog').setAttribute('aria-expanded', String(!collapsed));
+};
 document.querySelectorAll('[data-close]').forEach((el) => { el.onclick = closeForm; });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !$('sheet').hidden) closeForm();

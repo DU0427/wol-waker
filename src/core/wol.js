@@ -81,6 +81,8 @@ async function sendWithRetry(sendOnce, packet, opts) {
   throw lastErr;
 }
 
-module.exports = { normalizeMac, parseMacBytes, buildMagicPacket, validateTarget, sendWithRetry };
+var WolCoreApi = { normalizeMac, parseMacBytes, buildMagicPacket, validateTarget, sendWithRetry };
+// Node / Electron 主进程：CommonJS 导出（浏览器里没有 module，加守卫避免直引报错）
+if (typeof module !== 'undefined' && module.exports) module.exports = WolCoreApi;
 // 浏览器直引时挂到 window（Electron/Capacitor 的 WebView 可直接用）
-if (typeof window !== 'undefined') window.WolCore = module.exports;
+if (typeof window !== 'undefined') window.WolCore = WolCoreApi;

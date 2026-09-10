@@ -3,44 +3,107 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>wol-waker · 远程唤醒</title>
+<meta name="theme-color" content="#0b0f16" />
+<title>远程唤醒 · wol-waker</title>
 <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-<header class="top">
-  <h1>wol-waker</h1>
-  <p class="sub">UDP 直发魔术包 · 无需后端</p>
+
+<svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3.5v8.5"/><path d="M6.6 7.1a7.5 7.5 0 1 0 10.8 0"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="M14.5 5.5 18.5 9.5"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4v5h-5"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><path d="M4 6h16v12H4z"/><path d="M7.5 10.5 10 13l-2.5 2.5"/><path d="M12.5 15.5H16"/></symbol>
+</svg>
+
+<header class="appbar">
+  <div class="brand">
+    <span class="logo"><svg class="i"><use href="#i-power"/></svg></span>
+    <div class="brand-text">
+      <h1>远程唤醒</h1>
+      <p>UDP 直发魔术包 · 无需后端</p>
+    </div>
+  </div>
+  <button id="btnAdd" class="icon-btn accent" type="button" title="添加设备" aria-label="添加设备">
+    <svg class="i"><use href="#i-plus"/></svg>
+  </button>
 </header>
 
-<main class="wrap">
-  <section class="card">
-    <h2>设备</h2>
+<main class="layout">
+  <section class="panel">
+    <div class="panel-head">
+      <h2>设备</h2>
+      <span id="devCount" class="badge">0</span>
+    </div>
     <div id="list" class="list"></div>
   </section>
 
-  <section class="card">
-    <h2 id="formTitle">新增设备</h2>
-    <form id="form" autocomplete="off">
-      <label>别名<input id="fName" placeholder="家里的电脑" maxlength="32" /></label>
-      <label>域名 / IP<input id="fHost" placeholder="xxx.ddns.net" required /></label>
-      <label>端口<input id="fPort" type="number" value="9" min="1" max="65535" required /></label>
-      <label>MAC<input id="fMac" placeholder="AA:BB:CC:DD:EE:FF" required /></label>
-      <label>SecureOn（可选）<input id="fSecure" placeholder="留空即无密码" /></label>
-      <div class="row">
-        <button type="submit" class="primary">保存</button>
-        <button type="button" id="btnReset" class="ghost">清空</button>
-      </div>
-    </form>
-  </section>
-
-  <section class="card">
-    <h2>日志</h2>
-    <div id="log" class="log"></div>
-    <div class="row">
-      <button id="btnClearLog" class="ghost">清空日志</button>
+  <section class="panel terminal-panel">
+    <div class="panel-head">
+      <h2><svg class="i dim"><use href="#i-terminal"/></svg>终端</h2>
+      <button id="btnClearLog" class="ghost-btn sm" type="button">清空</button>
     </div>
+    <div id="log" class="terminal" role="log" aria-live="polite"></div>
   </section>
 </main>
+
+<div id="sheet" class="sheet" hidden>
+  <div class="backdrop" data-close></div>
+  <form id="form" class="sheet-card" autocomplete="off" novalidate>
+    <div class="sheet-head">
+      <h2 id="formTitle">添加设备</h2>
+      <button type="button" class="icon-btn" data-close aria-label="关闭"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+
+    <div class="sheet-body">
+      <label class="field">
+        <span class="lbl">别名</span>
+        <input id="fName" maxlength="24" placeholder="家里的电脑" />
+      </label>
+
+      <label class="field">
+        <span class="lbl">域名 / IP</span>
+        <input id="fHost" required placeholder="xxx.ddns.net" inputmode="url" spellcheck="false" />
+      </label>
+
+      <div class="grid2">
+        <label class="field">
+          <span class="lbl">唤醒端口</span>
+          <input id="fPort" type="number" value="9" min="1" max="65535" required inputmode="numeric" />
+          <small>魔术包发往此端口，默认 9</small>
+        </label>
+        <label class="field">
+          <span class="lbl">检查端口<span class="opt">可选</span></span>
+          <input id="fCheck" placeholder="3389,22" inputmode="numeric" spellcheck="false" />
+          <small>TCP 能连上即判定在线</small>
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="lbl">MAC 地址</span>
+        <input id="fMac" required maxlength="17" placeholder="AA:BB:CC:DD:EE:FF"
+               spellcheck="false" autocapitalize="characters" autocomplete="off" />
+        <small>自动大写并补冒号；粘贴 <code>AA-BB-…</code> 或 <code>AABB…</code> 也可识别</small>
+      </label>
+
+      <label class="field">
+        <span class="lbl">SecureOn 密码<span class="opt">可选</span></span>
+        <input id="fSecure" maxlength="17" placeholder="留空即无密码"
+               spellcheck="false" autocapitalize="characters" autocomplete="off" />
+      </label>
+
+      <p id="formError" class="form-error" hidden></p>
+    </div>
+
+    <div class="sheet-foot">
+      <button type="button" class="ghost-btn" data-close>取消</button>
+      <button type="submit" class="primary-btn">保存</button>
+    </div>
+  </form>
+</div>
 
 <script src="./wol.js"></script>
 <script src="./native-android.js"></script>

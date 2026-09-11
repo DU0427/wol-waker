@@ -12,7 +12,7 @@ function createWindow() {
     height: 820,
     minWidth: 380,
     minHeight: 560,
-    backgroundColor: '#0b0f16',
+    backgroundColor: '#F5F5F7',
     autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs') },
   });

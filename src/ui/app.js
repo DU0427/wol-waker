@@ -57,8 +57,15 @@ const Actions = (() => {
     if (!d || busy.has(id)) return;
     busy.add(id);
     const label = d.name || d.host;
-    const original = btn ? btn.textContent : '';
-    if (btn) { btn.disabled = true; btn.textContent = '发送中…'; }
+    const labelEl = btn ? btn.querySelector('.wake-label') : null;
+    const original = labelEl ? labelEl.textContent : (btn ? btn.textContent : '');
+    const setLabel = (text) => {
+      if (!btn) return;
+      btn.disabled = true;
+      if (labelEl) labelEl.textContent = text;
+      else btn.textContent = text;
+    };
+    setLabel('发送中…');
     try {
       if (!window.WolNative) {
         Log.add('warn', '未检测到原生桥接：当前是网页预览，打包成 Windows/安卓应用后才会真发', id);
@@ -72,7 +79,7 @@ const Actions = (() => {
       });
       Log.add('ok', `已发送 ${r.bytes} 字节 → ${r.resolvedIp}:${d.port}（第 ${r.attempts} 次成功）`, id);
       Store.touchWake(id);
-      if (btn) btn.textContent = '等待上线…';
+      setLabel('等待上线…');
 
       const ports = Store.parsePorts(d.checkPorts);
       for (let i = 0; i < 24; i++) {
@@ -91,7 +98,11 @@ const Actions = (() => {
       Log.add('err', `唤醒失败：${e && e.message ? e.message : e}`, id);
     } finally {
       busy.delete(id);
-      if (btn) { btn.disabled = false; btn.textContent = original; }
+      if (btn) {
+        btn.disabled = false;
+        if (labelEl) labelEl.textContent = original;
+        else btn.textContent = original;
+      }
     }
   }
 

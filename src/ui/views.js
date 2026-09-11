@@ -103,8 +103,9 @@ const Views = (() => {
 
     // 右：轻量操作
     const actions = el('div', 'dev-actions');
-    const wake = el('button', 'text-btn', '唤醒');
+    const wake = el('button', 'wake-link');
     wake.type = 'button';
+    wake.innerHTML = '<span class="wake-label">唤醒</span><svg class="i wake-arrow"><use href="#i-arrow"/></svg>';
     wake.onclick = (ev) => { ev.stopPropagation(); Actions.wake(d.id, wake); };
     const edit = iconBtn('i-pencil', '编辑', (ev) => { ev.stopPropagation(); Actions.edit(d.id); });
     actions.append(wake, edit);
@@ -138,9 +139,9 @@ const Views = (() => {
     statusLine.append(dot, statusText);
     hero.appendChild(statusLine);
 
-    const wake = el('button', 'wake-btn');
+    const wake = el('button', 'wake-link lg');
     wake.type = 'button';
-    wake.innerHTML = svgUse('i-power') + '<span>唤醒</span>';
+    wake.innerHTML = svgUse('i-power') + '<span class="wake-label">唤醒</span><svg class="i wake-arrow"><use href="#i-arrow"/></svg>';
     if (st === 'waking') wake.classList.add('waking');
     wake.onclick = () => Actions.wake(id, wake);
     hero.appendChild(wake);

@@ -194,19 +194,33 @@ button:disabled { opacity: .45; cursor: default; }
 .primary-btn:hover:not(:disabled) { opacity: .88; }
 .primary-btn:active:not(:disabled) { transform: scale(.985); }
 
-/* 轻量唤醒：文字 + 箭头，hover 才出浅背景 */
+/* 唤醒：轻量但明确的按钮 —— 浅底 + 细边框 + 绿色文字 */
 .wake-link {
-  display: inline-flex; align-items: center; gap: 1px;
-  padding: 5px 10px; border-radius: var(--r-sm);
-  color: var(--text-2); font-size: 13px;
-  transition: background .12s ease, color .12s ease;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 6px 12px;
+  border-radius: var(--r-md);
+  background: var(--content);
+  border: 1px solid var(--divider);
+  color: var(--accent);
+  font-size: 13px; font-weight: 500;
+  transition: background .12s ease, border-color .12s ease, color .12s ease, transform .06s ease;
 }
-.wake-link:hover:not(:disabled) { background: var(--hover); color: var(--text); }
-.wake-link:active:not(:disabled) { background: var(--active); }
-.wake-link .wake-arrow { width: 13px; height: 13px; margin-left: 1px; }
+.wake-link:hover:not(:disabled) { background: rgba(52, 199, 89, 0.07); border-color: rgba(52, 199, 89, 0.4); }
+.wake-link:active:not(:disabled) { background: rgba(52, 199, 89, 0.13); transform: scale(.98); }
+.wake-link:disabled { opacity: 1; color: var(--text-3); background: var(--sidebar-bg); border-color: var(--divider-soft); cursor: default; }
+.wake-link .wake-arrow { width: 13px; height: 13px; margin-left: 2px; }
 .wake-link .i { width: 15px; height: 15px; }
 .wake-link.lg { padding: 8px 14px; font-size: 14px; }
-.wake-link.waking .wake-label { color: var(--warn); }
+.wake-link .wake-suffix { display: none; }
+
+/* 在线：弱化显示「已在线」 */
+.wake-link.is-online { color: var(--text-3); background: var(--sidebar-bg); border-color: var(--divider-soft); }
+.wake-link.is-online:hover:not(:disabled) { color: var(--text-2); background: var(--hover); border-color: var(--divider); }
+/* 唤醒中 / 等待上线：禁用态 */
+.wake-link.is-waking { color: var(--warn); background: var(--sidebar-bg); border-color: var(--divider-soft); }
+.wake-link.is-waking .wake-arrow { display: none; }
+/* 成功反馈：已唤醒 ✓ */
+.wake-link.is-success { color: var(--accent); border-color: rgba(52, 199, 89, 0.5); background: rgba(52, 199, 89, 0.08); }
 
 :where(button, input, textarea, a, [tabindex]):focus-visible {
   outline: 2px solid var(--focus); outline-offset: 2px;
@@ -261,10 +275,28 @@ button:disabled { opacity: .45; cursor: default; }
 .dev-actions { display: flex; align-items: center; gap: 2px; }
 
 @media (max-width: 640px) {
-  .dev-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 14px 6px; }
+  /* 纵向布局：名称状态 → 地址 → 大按钮 */
+  .dev-row { grid-template-columns: 1fr; gap: 10px; padding: 16px 6px; }
   .dev-id { grid-column: 1; grid-row: 1; }
-  .dev-actions { grid-column: 2; grid-row: 1; }
-  .dev-detail { grid-column: 1 / -1; grid-row: 2; flex-direction: row; gap: 14px; }
+  .dev-detail { grid-column: 1; grid-row: 2; flex-direction: row; align-items: baseline; gap: 10px; }
+  .dev-sub { display: none; }                  /* MAC/Port 默认隐藏，详情页可看 */
+  .dev-actions { grid-column: 1; grid-row: 3; }
+  .dev-actions .icon-btn { display: none; }    /* 手机上不堆小图标，编辑在详情页 */
+
+  /* 拇指友好的主操作按钮 */
+  .wake-link {
+    width: 100%; height: 46px;
+    justify-content: center;
+    font-size: 15px; font-weight: 600;
+    gap: 6px; border-radius: 9px;
+    background: var(--content);
+    border: 1px solid var(--divider);
+    color: var(--accent);
+  }
+  .wake-link .wake-arrow { width: 15px; height: 15px; margin-left: 4px; }
+  .wake-link .wake-suffix { display: inline; }
+  .wake-link.is-online { color: var(--text-3); background: var(--sidebar-bg); }
+  .wake-link.is-online:hover:not(:disabled) { color: var(--text-2); background: var(--hover); }
 }
 
 /* ── 设备详情 ───────────────────────────── */

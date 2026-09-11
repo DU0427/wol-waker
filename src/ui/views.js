@@ -105,13 +105,15 @@ const Views = (() => {
     const actions = el('div', 'dev-actions');
     const wake = el('button', 'wake-link');
     wake.type = 'button';
-    wake.innerHTML = '<span class="wake-label">唤醒</span><svg class="i wake-arrow"><use href="#i-arrow"/></svg>';
-    wake.onclick = (ev) => { ev.stopPropagation(); Actions.wake(d.id, wake); };
+    wake.dataset.wake = d.id;
+    wake.innerHTML = '<span class="wake-label">唤醒</span><span class="wake-suffix">电脑</span><svg class="i wake-arrow"><use href="#i-arrow"/></svg>';
+    wake.onclick = (ev) => { ev.stopPropagation(); Actions.wake(d.id); };
     const edit = iconBtn('i-pencil', '编辑', (ev) => { ev.stopPropagation(); Actions.edit(d.id); });
     actions.append(wake, edit);
 
     row.append(id, detail, actions);
     row.onclick = () => { location.hash = '#/device/' + encodeURIComponent(d.id); };
+    Actions.refreshWake(d.id);
     return row;
   }
 
@@ -141,9 +143,10 @@ const Views = (() => {
 
     const wake = el('button', 'wake-link lg');
     wake.type = 'button';
-    wake.innerHTML = svgUse('i-power') + '<span class="wake-label">唤醒</span><svg class="i wake-arrow"><use href="#i-arrow"/></svg>';
-    if (st === 'waking') wake.classList.add('waking');
-    wake.onclick = () => Actions.wake(id, wake);
+    wake.dataset.wake = id;
+    wake.innerHTML = svgUse('i-power') + '<span class="wake-label">唤醒</span><span class="wake-suffix">电脑</span><svg class="i wake-arrow"><use href="#i-arrow"/></svg>';
+    if (st === 'waking') wake.classList.add('is-waking');
+    wake.onclick = () => Actions.wake(id);
     hero.appendChild(wake);
 
     const infoSec = el('section');
@@ -174,6 +177,7 @@ const Views = (() => {
     logSec.appendChild(box);
 
     root.append(hero, infoSec, actSec, logSec);
+    Actions.refreshWake(id);
     return root;
   }
 

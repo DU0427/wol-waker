@@ -20,9 +20,37 @@ const Actions = (() => {
       n.textContent = (window.STATUS_LABEL || {})[s] || '未检查';
     });
     document.querySelectorAll(`.dev-row[data-id="${id}"]`).forEach((c) => c.classList.toggle('is-online', s === 'online'));
-    const btn = document.querySelector('.wake-btn');
-    if (btn) btn.classList.toggle('waking', s === 'waking');
+    applyWakeButtons(id);
   }
+
+  /* 唤醒按钮状态联动：
+     unknown/offline → 「唤醒」         （主要操作，绿色）
+     online          → 「已在线 ✓」     （弱化，灰色）
+     waking          → 「唤醒中…」      （禁用，橙色）
+     success 闪回   → 「已唤醒 ✓」     （绿色）
+     等待上线       → 「等待上线…」     （禁用） */
+  function wakeButtons(id) {
+    return Array.from(document.querySelectorAll(`.wake-link[data-wake="${id}"]`));
+  }
+  function setWakeLabel(btn, text, mode, disabled) {
+    const el = btn.querySelector('.wake-label');
+    const suffix = btn.querySelector('.wake-suffix');
+    if (el) el.textContent = text;
+    if (suffix) suffix.style.display = text === '唤醒' ? '' : 'none';
+    btn.classList.remove('is-waking', 'is-success', 'is-online');
+    if (mode) btn.classList.add(mode);
+    btn.disabled = !!disabled;
+  }
+  function applyWakeButtons(id, forced) {
+    const s = states[id] || 'unknown';
+    const cfg = forced
+      ? { text: forced, mode: 'is-waking', disabled: true }
+      : s === 'online' ? { text: '已在线 ✓', mode: 'is-online', disabled: false }
+      : s === 'waking' ? { text: '唤醒中…', mode: 'is-waking', disabled: true }
+      : { text: '唤醒', mode: null, disabled: false };
+    wakeButtons(id).forEach((b) => setWakeLabel(b, cfg.text, cfg.mode, cfg.disabled));
+  }
+  function refreshWake(id) { applyWakeButtons(id); }
 
   async function safeCheck(host, ports) {
     if (!window.WolNative) return null;
@@ -52,23 +80,15 @@ const Actions = (() => {
     return false;
   }
 
-  async function wake(id, btn) {
+  async function wake(id) {
     const d = Store.get(id);
     if (!d || busy.has(id)) return;
     busy.add(id);
     const label = d.name || d.host;
-    const labelEl = btn ? btn.querySelector('.wake-label') : null;
-    const original = labelEl ? labelEl.textContent : (btn ? btn.textContent : '');
-    const setLabel = (text) => {
-      if (!btn) return;
-      btn.disabled = true;
-      if (labelEl) labelEl.textContent = text;
-      else btn.textContent = text;
-    };
-    setLabel('发送中…');
     try {
       if (!window.WolNative) {
         Log.add('warn', '未检测到原生桥接：当前是网页预览，打包成 Windows/安卓应用后才会真发', id);
+        setState(id, 'unknown');
         return;
       }
       if (window.WolCore) window.WolCore.validateTarget(d);
@@ -79,7 +99,11 @@ const Actions = (() => {
       });
       Log.add('ok', `已发送 ${r.bytes} 字节 → ${r.resolvedIp}:${d.port}（第 ${r.attempts} 次成功）`, id);
       Store.touchWake(id);
-      setLabel('等待上线…');
+
+      // 成功反馈：已唤醒 ✓（2 秒后恢复正常）
+      wakeButtons(id).forEach((b) => setWakeLabel(b, '已唤醒 ✓', 'is-success', false));
+      await sleep(2000);
+      applyWakeButtons(id, '等待上线…');
 
       const ports = Store.parsePorts(d.checkPorts);
       for (let i = 0; i < 24; i++) {
@@ -98,11 +122,7 @@ const Actions = (() => {
       Log.add('err', `唤醒失败：${e && e.message ? e.message : e}`, id);
     } finally {
       busy.delete(id);
-      if (btn) {
-        btn.disabled = false;
-        if (labelEl) labelEl.textContent = original;
-        else btn.textContent = original;
-      }
+      applyWakeButtons(id);
     }
   }
 
@@ -180,7 +200,7 @@ const Actions = (() => {
     });
   }
 
-  return { state, wake, check, edit, remove, removeAll, saveDefaults, exportData, importData };
+  return { state, refreshWake, wake, check, edit, remove, removeAll, saveDefaults, exportData, importData };
 })();
 
 /* ── 通用数据弹窗（导出/导入 JSON） ─────── */

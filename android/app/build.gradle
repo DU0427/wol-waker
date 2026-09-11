@@ -3,6 +3,18 @@ apply plugin: 'com.android.application'
 android {
     namespace "com.wolwaker.app"
     compileSdk rootProject.ext.compileSdkVersion
+
+    // 固定 debug 签名：CI 每次构建使用仓库内的同一把密钥，
+    // 保证新版本可以覆盖安装旧版本（否则每次构建签名都不同会签名冲突）。
+    signingConfigs {
+        debug {
+            storeFile file('wolwaker-debug.keystore')
+            storePassword 'wolwaker-debug'
+            keyAlias 'wolwaker'
+            keyPassword 'wolwaker-debug'
+        }
+    }
+
     defaultConfig {
         applicationId "com.wolwaker.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -17,6 +29,9 @@ android {
         }
     }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

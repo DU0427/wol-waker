@@ -2,6 +2,15 @@
 // 点击动作统一走全局 Actions（在 app.js 中定义）
 'use strict';
 
+// 设备状态 → 中文文案（app.js 的 setState 也会用）
+var STATUS_LABEL = {
+  unknown: '未检查',
+  offline: '离线',
+  checking: '检查中…',
+  waking: '唤醒中…',
+  online: '在线',
+};
+
 const Views = (() => {
   function el(tag, cls, text) {
     const n = document.createElement(tag);
@@ -11,7 +20,7 @@ const Views = (() => {
   }
   function svgUse(symbol) { return `<svg class="i"><use href="#${symbol}"/></svg>`; }
   function iconBtn(symbol, label, onClick, cls) {
-    const b = el('button', 'icon-btn sm' + (cls ? ' ' + cls : ''));
+    const b = el('button', 'icon-btn' + (cls ? ' ' + cls : ''));
     b.type = 'button';
     b.title = label;
     b.setAttribute('aria-label', label);
@@ -19,17 +28,11 @@ const Views = (() => {
     b.onclick = onClick;
     return b;
   }
-  function ghost(text, onClick) {
-    const b = el('button', 'ghost-btn', text);
+  function ghost(text, onClick, extra) {
+    const b = el('button', 'ghost-btn' + (extra ? ' ' + extra : ''), text);
     b.type = 'button';
     b.onclick = onClick;
     return b;
-  }
-  function addMeta(dl, k, v) {
-    const dt = el('dt', null, k);
-    const dd = el('dd', null, v);
-    dd.title = v;
-    dl.append(dt, dd);
   }
   function addInfo(list, k, v) {
     const row = el('div', 'info-row');
@@ -58,7 +61,7 @@ const Views = (() => {
     container.scrollTop = container.scrollHeight;
   }
 
-  /* ── 设备列表 ─────────────────────────── */
+  /* ── 设备列表：横向列表行 ──────────────── */
   function devices() {
     const root = el('div', 'devices-view');
     const devs = Store.list();
@@ -68,39 +71,47 @@ const Views = (() => {
       root.appendChild(empty);
       return root;
     }
-    const grid = el('div', 'dev-grid');
-    devs.forEach((d) => grid.appendChild(deviceCard(d)));
-    root.appendChild(grid);
+    const list = el('div', 'dev-list');
+    devs.forEach((d) => list.appendChild(deviceRow(d)));
+    root.appendChild(list);
     return root;
   }
 
-  function deviceCard(d) {
-    const card = el('article', 'dev');
-    card.dataset.id = d.id;
+  function deviceRow(d) {
     const st = Actions.state(d.id) || 'unknown';
-    if (st === 'online') card.classList.add('is-online');
+    const row = el('div', 'dev-row');
+    row.dataset.id = d.id;
+    if (st === 'online') row.classList.add('is-online');
 
-    const top = el('div', 'dev-top');
+    // 左：状态 + 名称 + 状态文案
+    const id = el('div', 'dev-id');
     const dot = el('span', 'dot');
     dot.dataset.dot = d.id;
     dot.dataset.state = st;
-    const name = el('h3', 'dev-name', d.name || d.host);
-    top.append(dot, name, iconBtn('i-pencil', '编辑', (ev) => { ev.stopPropagation(); Actions.edit(d.id); }));
+    const idText = el('div', 'dev-id-text');
+    idText.appendChild(el('span', 'dev-name', d.name || d.host));
+    const status = el('span', 'dev-status', STATUS_LABEL[st] || '未检查');
+    status.dataset.status = d.id;
+    status.dataset.state = st;
+    idText.appendChild(status);
+    id.append(dot, idText);
 
-    const meta = el('dl', 'dev-meta');
-    addMeta(meta, '地址', d.host + ':' + d.port);
-    addMeta(meta, 'MAC', d.mac);
-    addMeta(meta, '检查', Store.parsePorts(d.checkPorts).join(', '));
+    // 中：辅助信息，低对比度
+    const detail = el('div', 'dev-detail');
+    detail.appendChild(el('span', 'dev-addr', d.host + ':' + d.port));
+    detail.appendChild(el('span', 'dev-sub', d.mac));
 
+    // 右：轻量操作
     const actions = el('div', 'dev-actions');
-    const wake = el('button', 'primary-btn', '唤醒');
+    const wake = el('button', 'text-btn', '唤醒');
     wake.type = 'button';
     wake.onclick = (ev) => { ev.stopPropagation(); Actions.wake(d.id, wake); };
-    actions.appendChild(wake);
+    const edit = iconBtn('i-pencil', '编辑', (ev) => { ev.stopPropagation(); Actions.edit(d.id); });
+    actions.append(wake, edit);
 
-    card.append(top, meta, actions);
-    card.onclick = () => { location.hash = '#/device/' + encodeURIComponent(d.id); };
-    return card;
+    row.append(id, detail, actions);
+    row.onclick = () => { location.hash = '#/device/' + encodeURIComponent(d.id); };
+    return row;
   }
 
   /* ── 设备详情 ─────────────────────────── */
@@ -113,55 +124,68 @@ const Views = (() => {
     }
     const st = Actions.state(id) || 'unknown';
 
-    const hero = el('div', 'panel hero');
-    const dot = el('span', 'dot big-dot');
+    const hero = el('header', 'detail-hero');
+    hero.appendChild(el('h2', 'detail-name', d.name || d.host));
+    hero.appendChild(el('div', 'detail-host', d.host + ':' + d.port));
+    const statusLine = el('div', 'detail-status');
+    statusLine.dataset.state = st;
+    const dot = el('span', 'dot');
     dot.dataset.dot = id;
     dot.dataset.state = st;
-    hero.append(dot, el('h2', null, d.name || d.host), el('div', 'host', d.host + ':' + d.port));
+    const statusText = el('span', 'status-text', STATUS_LABEL[st] || '未检查');
+    statusText.dataset.status = id;
+    statusText.dataset.state = st;
+    statusLine.append(dot, statusText);
+    hero.appendChild(statusLine);
 
-    const orb = el('button', 'wake-orb');
-    orb.type = 'button';
-    orb.innerHTML = svgUse('i-power') + '<span class="txt">唤醒</span>';
-    if (st === 'waking') orb.classList.add('waking');
-    orb.onclick = () => Actions.wake(id, orb);
-    hero.appendChild(orb);
+    const wake = el('button', 'wake-btn');
+    wake.type = 'button';
+    wake.innerHTML = svgUse('i-power') + '<span>唤醒</span>';
+    if (st === 'waking') wake.classList.add('waking');
+    wake.onclick = () => Actions.wake(id, wake);
+    hero.appendChild(wake);
 
-    const info = el('div', 'panel info-list');
+    const infoSec = el('section');
+    infoSec.appendChild(el('div', 'section-label', '设备信息'));
+    const info = el('div', 'info-list');
     addInfo(info, '域名 / IP', d.host);
     addInfo(info, '唤醒端口', String(d.port));
-    addInfo(info, 'MAC', d.mac);
+    addInfo(info, 'MAC 地址', d.mac);
     addInfo(info, '检查端口', Store.parsePorts(d.checkPorts).join(', '));
     addInfo(info, 'SecureOn', d.secureOn || '未设置');
     addInfo(info, '上次唤醒', fmtWhen(d.lastWakeAt));
+    infoSec.appendChild(info);
 
-    const act = el('div', 'detail-actions');
-    act.append(
+    const actSec = el('section');
+    actSec.appendChild(el('div', 'section-label', '操作'));
+    const actRow = el('div', 'action-row');
+    actRow.append(
       ghost('检查在线', () => Actions.check(id, false)),
       ghost('编辑', () => Actions.edit(id)),
-      ghost('删除', () => Actions.remove(id)),
+      ghost('删除', () => Actions.remove(id), 'danger'),
     );
+    actSec.appendChild(actRow);
 
-    const logPanel = el('div', 'panel');
-    const head = el('div', 'panel-head');
-    head.appendChild(el('h2', null, '本机日志'));
+    const logSec = el('section');
+    logSec.appendChild(el('div', 'section-label', '本机日志'));
     const box = el('div', 'dlog');
     box.dataset.log = 'device:' + id;
-    logPanel.append(head, box);
+    logSec.appendChild(box);
 
-    root.append(hero, info, act, logPanel);
+    root.append(hero, infoSec, actSec, logSec);
     return root;
   }
 
   /* ── 日志页 ───────────────────────────── */
   function logs() {
     const root = el('div', 'logs-page');
-    const bar = el('div', 'panel-head');
-    bar.appendChild(el('h2', null, '全部日志'));
+    const bar = el('div', 'term-bar');
+    bar.appendChild(el('div', 'section-label', '全部日志'));
 
     const term = el('div', 'terminal');
     term.dataset.log = 'all';
 
-    const filters = el('div', 'term-filter head-actions');
+    const filters = el('div', 'term-filter');
     ['all', 'info', 'warn', 'err', 'net'].forEach((f) => {
       const chip = el('button', 'chip' + (f === 'all' ? ' active' : ''), f.toUpperCase());
       chip.type = 'button';
@@ -208,39 +232,38 @@ const Views = (() => {
     const root = el('div', 'settings');
     const s = Store.settings();
 
-    const g1 = el('div', 'panel set-group');
-    g1.appendChild(el('div', 'set-title', '默认值 · 新建设备时自动带入'));
-    g1.appendChild(setRow('默认唤醒端口', '魔术包发往的端口', setInput('sWakePort', String(s.wakePort || 9), 5)));
-    g1.appendChild(setRow('默认检查端口', '逗号分隔，留空用 3389,22', setInput('sCheckPorts', s.checkPorts || '', 24)));
-    const saveBtn = el('button', 'primary-btn', '保存默认值');
+    const sec1 = el('section');
+    sec1.appendChild(el('div', 'section-label', '默认值'));
+    sec1.appendChild(setRow('默认唤醒端口', '新建设备时自动带入', setInput('sWakePort', String(s.wakePort || 9), 5)));
+    sec1.appendChild(setRow('默认检查端口', '逗号分隔，留空用 3389,22', setInput('sCheckPorts', s.checkPorts || '', 24)));
+    const saveBtn = el('button', 'primary-btn', '保存');
     saveBtn.type = 'button';
     saveBtn.onclick = () => Actions.saveDefaults();
-    g1.appendChild(setRow('', '', saveBtn));
-    root.appendChild(g1);
+    const r1 = el('div', 'set-row');
+    const v1 = el('div', 'v');
+    v1.appendChild(saveBtn);
+    r1.append(el('div', 'k'), v1);
+    sec1.appendChild(r1);
 
-    const g2 = el('div', 'panel set-group');
-    g2.appendChild(el('div', 'set-title', '数据'));
+    const sec2 = el('section');
+    sec2.appendChild(el('div', 'section-label', '数据'));
     const r2 = el('div', 'set-row');
     const k2 = el('div', 'k');
     k2.appendChild(el('b', null, '设备数据'));
     k2.appendChild(el('small', null, '导出/导入 JSON，用于备份或换机'));
     const v2 = el('div', 'v');
-    v2.style.display = 'flex';
-    v2.style.gap = '8px';
-    v2.style.flexWrap = 'wrap';
     v2.append(
       ghost('导出', () => Actions.exportData()),
       ghost('导入', () => Actions.importData()),
-      ghost('清空全部', () => Actions.removeAll()),
+      ghost('清空全部', () => Actions.removeAll(), 'danger'),
     );
     r2.append(k2, v2);
-    g2.appendChild(r2);
-    root.appendChild(g2);
+    sec2.appendChild(r2);
 
-    const g3 = el('div', 'panel set-group');
-    g3.appendChild(el('div', 'set-title', '关于'));
-    g3.appendChild(setRow('工作原理', 'DNS 解析 → UDP 魔术包 → 网卡待机监听开机'));
-    g3.appendChild(setRow('数据存储', '全部保存在本机，不上传任何服务器'));
+    const sec3 = el('section');
+    sec3.appendChild(el('div', 'section-label', '关于'));
+    sec3.appendChild(setRow('工作原理', 'DNS 解析 → UDP 魔术包 → 网卡待机监听开机'));
+    sec3.appendChild(setRow('数据存储', '全部保存在本机，不上传任何服务器'));
     const link = el('a', 'ghost-btn', '打开仓库');
     link.href = 'https://github.com/DU0427/wol-waker';
     link.target = '_blank';
@@ -252,9 +275,9 @@ const Views = (() => {
     const v3 = el('div', 'v');
     v3.appendChild(link);
     r3.append(k3, v3);
-    g3.appendChild(r3);
-    root.appendChild(g3);
+    sec3.appendChild(r3);
 
+    root.append(sec1, sec2, sec3);
     return root;
   }
 

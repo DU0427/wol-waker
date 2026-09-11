@@ -15,9 +15,13 @@ const Actions = (() => {
   function setState(id, s) {
     states[id] = s;
     document.querySelectorAll(`.dot[data-dot="${id}"]`).forEach((dot) => { dot.dataset.state = s; });
-    document.querySelectorAll(`.dev[data-id="${id}"]`).forEach((c) => c.classList.toggle('is-online', s === 'online'));
-    const orb = document.querySelector('.wake-orb');
-    if (orb) orb.classList.toggle('waking', s === 'waking');
+    document.querySelectorAll(`[data-status="${id}"]`).forEach((n) => {
+      n.dataset.state = s;
+      n.textContent = (window.STATUS_LABEL || {})[s] || '未检查';
+    });
+    document.querySelectorAll(`.dev-row[data-id="${id}"]`).forEach((c) => c.classList.toggle('is-online', s === 'online'));
+    const btn = document.querySelector('.wake-btn');
+    if (btn) btn.classList.toggle('waking', s === 'waking');
   }
 
   async function safeCheck(host, ports) {
@@ -247,16 +251,19 @@ function render() {
   const key = r.name === 'device' ? 'devices' : r.name;
   document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('active', a.dataset.nav === key));
 
+  const inner = document.createElement('div');
+  inner.className = 'view-inner';
   if (r.name === 'device') {
     if (!Store.get(r.id)) { location.hash = '#/devices'; return; }
-    view.appendChild(Views.deviceDetail(r.id));
+    inner.appendChild(Views.deviceDetail(r.id));
   } else if (r.name === 'logs') {
-    view.appendChild(Views.logs());
+    inner.appendChild(Views.logs());
   } else if (r.name === 'settings') {
-    view.appendChild(Views.settings());
+    inner.appendChild(Views.settings());
   } else {
-    view.appendChild(Views.devices());
+    inner.appendChild(Views.devices());
   }
+  view.appendChild(inner);
 
   document.querySelectorAll('[data-log]').forEach((c) => Views.renderLogInto(c));
   view.scrollTop = 0;

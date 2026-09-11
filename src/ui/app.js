@@ -97,7 +97,7 @@ const Actions = (() => {
       const r = await window.WolNative.sendMagicPacket({
         host: d.host, port: d.port, mac: d.mac, secureOn: d.secureOn || undefined,
       });
-      Log.add('ok', `已发送 ${r.bytes} 字节 → ${r.resolvedIp}:${d.port}（第 ${r.attempts} 次成功）`, id);
+      Log.add('ok', `已发送唤醒请求 → ${r.resolvedIp}:${d.port}（${r.bytes} 字节，第 ${r.attempts} 次成功）`, id);
       Store.touchWake(id);
 
       // 成功反馈：已唤醒 ✓（2 秒后恢复正常）
@@ -119,12 +119,14 @@ const Actions = (() => {
       Log.add('warn', `${label} 2 分钟内未上线：检查端口转发 / 静态 ARP / BIOS 与网卡唤醒设置`, id);
     } catch (e) {
       setState(id, 'offline');
-      Log.add('err', `唤醒失败：${e && e.message ? e.message : e}`, id);
+      Log.add('err', `无法发送唤醒请求：${e && e.message ? e.message : e}`, id);
     } finally {
       busy.delete(id);
       applyWakeButtons(id);
     }
   }
+
+  function addDevice() { openForm(null); }
 
   function edit(id) { openForm(Store.get(id)); }
 
@@ -200,7 +202,7 @@ const Actions = (() => {
     });
   }
 
-  return { state, refreshWake, wake, check, edit, remove, removeAll, saveDefaults, exportData, importData };
+  return { state, refreshWake, wake, check, edit, addDevice, remove, removeAll, saveDefaults, exportData, importData };
 })();
 
 /* ── 通用数据弹窗（导出/导入 JSON） ─────── */

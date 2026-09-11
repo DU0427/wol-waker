@@ -67,7 +67,11 @@ const Views = (() => {
     const devs = Store.list();
     if (!devs.length) {
       const empty = el('div', 'empty');
-      empty.innerHTML = '<strong>还没有设备</strong><span>点右上角 + 添加第一台电脑</span>';
+      empty.innerHTML = '<strong>还没有设备</strong><span>添加一台电脑，然后就可以从手机或电脑远程唤醒它。</span>';
+      const btn = el('button', 'ghost-btn', '添加设备');
+      btn.type = 'button';
+      btn.onclick = () => Actions.addDevice();
+      empty.appendChild(btn);
       root.appendChild(empty);
       return root;
     }

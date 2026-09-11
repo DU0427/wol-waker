@@ -8,13 +8,17 @@
   /* 底色 */
   --window: #F5F5F7;
   --content: #FFFFFF;
-  --sidebar-bg: #F0F0F2;
+  --sidebar-bg: #F2F2F4;
   --elevated: #FFFFFF;
   --field: #FFFFFF;
   --field-hover: #FAFAFC;
 
-  --hover: rgba(0, 0, 0, 0.045);
-  --active: rgba(0, 0, 0, 0.08);
+  --hover: #F2F2F2;
+  --active: #E5E5EA;
+
+  /* 手机端唤醒按钮：浅绿底，不刺眼 */
+  --wake-bg: #E8F8EC;
+  --wake-text: #248A3D;
 
   /* 文字：三级对比 */
   --text: #1D1D1F;
@@ -42,7 +46,7 @@
 
   --r-sm: 6px;
   --r-md: 8px;
-  --r-lg: 10px;
+  --r-lg: 12px;
 
   --sidebar-w: 216px;
   --topbar-h: 52px;
@@ -108,7 +112,7 @@ body {
 }
 .nav-item .i { width: 16px; height: 16px; }
 .nav-item:hover { background: var(--hover); color: var(--text); }
-.nav-item.active { background: rgba(0, 0, 0, 0.07); color: var(--text); }
+.nav-item.active { background: var(--active); color: var(--text); }
 .sidebar-foot { margin-top: auto; padding: 14px 9px 0; font-size: 11px; color: var(--text-3); }
 
 /* ── 内容区 ─────────────────────────────── */
@@ -122,12 +126,12 @@ body {
   border-bottom: 1px solid var(--divider);
   background: var(--content);
 }
-.topbar h1 { margin: 0; font-size: 14px; font-weight: 600; flex: 1; min-width: 0;
+.topbar h1 { margin: 0; font-size: 17px; font-weight: 600; flex: 1; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .topbar-actions { display: flex; align-items: center; gap: 4px; }
 
 .view { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--content); }
-.view-inner { max-width: 760px; margin: 0 auto; padding: 32px 28px; }
+.view-inner { max-width: 1040px; margin: 0 auto; padding: 32px 36px; }
 
 /* ── 底部标签栏（窄屏） ─────────────────── */
 .tabbar { display: none; }
@@ -197,12 +201,12 @@ button:disabled { opacity: .45; cursor: default; }
 /* 唤醒：轻量但明确的按钮 —— 浅底 + 细边框 + 绿色文字 */
 .wake-link {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: var(--r-md);
   background: var(--content);
   border: 1px solid var(--divider);
   color: var(--accent);
-  font-size: 13px; font-weight: 500;
+  font-size: 13.5px; font-weight: 500;
   transition: background .12s ease, border-color .12s ease, color .12s ease, transform .06s ease;
 }
 .wake-link:hover:not(:disabled) { background: rgba(52, 199, 89, 0.07); border-color: rgba(52, 199, 89, 0.4); }
@@ -257,7 +261,7 @@ button:disabled { opacity: .45; cursor: default; }
   letter-spacing: -.1px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.dev-status { font-size: 12.5px; color: var(--text-3); }
+.dev-status { font-size: 13px; color: var(--text-3); }
 .dev-status[data-state="online"] { color: var(--accent); }
 .dev-status[data-state="waking"], .dev-status[data-state="checking"] { color: var(--warn); }
 
@@ -274,7 +278,7 @@ button:disabled { opacity: .45; cursor: default; }
 
 .dev-actions { display: flex; align-items: center; gap: 2px; }
 
-@media (max-width: 640px) {
+@media (max-width: 600px) {
   /* 纵向布局：名称状态 → 地址 → 大按钮 */
   .dev-row { grid-template-columns: 1fr; gap: 10px; padding: 16px 6px; }
   .dev-id { grid-column: 1; grid-row: 1; }
@@ -283,20 +287,23 @@ button:disabled { opacity: .45; cursor: default; }
   .dev-actions { grid-column: 1; grid-row: 3; }
   .dev-actions .icon-btn { display: none; }    /* 手机上不堆小图标，编辑在详情页 */
 
-  /* 拇指友好的主操作按钮 */
+  /* 拇指友好的主操作按钮：浅绿底，明确但不刺眼 */
   .wake-link {
     width: 100%; height: 46px;
     justify-content: center;
     font-size: 15px; font-weight: 600;
-    gap: 6px; border-radius: 9px;
-    background: var(--content);
-    border: 1px solid var(--divider);
-    color: var(--accent);
+    gap: 6px; border-radius: 10px;
+    background: var(--wake-bg);
+    border: 1px solid transparent;
+    color: var(--wake-text);
   }
+  .wake-link:hover:not(:disabled) { background: #DFF4E5; border-color: transparent; }
+  .wake-link:active:not(:disabled) { background: #D2EEDA; }
   .wake-link .wake-arrow { width: 15px; height: 15px; margin-left: 4px; }
   .wake-link .wake-suffix { display: inline; }
-  .wake-link.is-online { color: var(--text-3); background: var(--sidebar-bg); }
+  .wake-link.is-online { color: var(--text-3); background: var(--sidebar-bg); border-color: var(--divider-soft); }
   .wake-link.is-online:hover:not(:disabled) { color: var(--text-2); background: var(--hover); }
+  .wake-link.is-waking { background: var(--wake-bg); color: var(--warn); border-color: transparent; }
 }
 
 /* ── 设备详情 ───────────────────────────── */

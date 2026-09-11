@@ -136,13 +136,15 @@ body {
 /* ── 底部标签栏（窄屏） ─────────────────── */
 .tabbar { display: none; }
 @media (max-width: 899px) {
+  /* 手机/平板：外壳切为纵向，Sidebar 隐藏、TabBar 贴底 */
+  .app { flex-direction: column; }
   .sidebar { display: none; }
   .topbar { padding: 0 16px; }
   .view-inner { padding: 16px; }
   .tabbar {
     display: flex; flex: 0 0 auto; order: 2;
-    height: var(--tabbar-h);
-    padding-bottom: env(safe-area-inset-bottom);
+    min-height: var(--tabbar-h);
+    padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
     background: var(--sidebar-bg);
     border-top: 1px solid var(--divider);
   }

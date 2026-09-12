@@ -17,7 +17,9 @@
 </head>
 <body>
 
-<ion-app class="app">
+<ion-app>
+  <!-- 自己的布局容器：不直接给 ion-app 设 flex（:host 样式会打架） -->
+  <div class="app">
   <!-- 桌面侧边栏（<900px 隐藏） -->
   <aside class="sidebar">
     <div class="brand">
@@ -52,7 +54,7 @@
     </ion-content>
   </main>
 
-  <ion-tab-bar class="tabbar" slot="bottom">
+  <ion-tab-bar class="tabbar">
     <ion-tab-button data-nav="devices" href="#/devices">
       <ion-icon name="laptop-outline"></ion-icon>
       <ion-label>设备</ion-label>
@@ -66,6 +68,7 @@
       <ion-label>设置</ion-label>
     </ion-tab-button>
   </ion-tab-bar>
+  </div>
 </ion-app>
 
 <!-- 设备表单弹窗（iOS 底部弹层） -->

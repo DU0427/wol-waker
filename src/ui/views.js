@@ -90,6 +90,7 @@ const Views = (() => {
     const p = el('p', null, `${STATUS_LABEL[st]} · ${d.host}:${d.port}`);
     p.dataset.status = d.id;
     label.appendChild(p);
+    label.appendChild(el('p', 'dev-mac', d.mac));
 
     const wake = ion('ion-button');
     wake.className = 'wake-link';

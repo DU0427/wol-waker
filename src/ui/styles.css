@@ -133,29 +133,8 @@ body {
 .view { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--content); }
 .view-inner { max-width: 1040px; margin: 0 auto; padding: 32px 36px; }
 
-/* ── 底部标签栏（窄屏） ─────────────────── */
+/* ── 手机 / 平板：iOS 原生风格（见文件末尾）─ */
 .tabbar { display: none; }
-@media (max-width: 899px) {
-  /* 手机/平板：外壳切为纵向，Sidebar 隐藏、TabBar 贴底 */
-  .app { flex-direction: column; }
-  .sidebar { display: none; }
-  .topbar { padding: 0 16px; }
-  .view-inner { padding: 16px; }
-  .tabbar {
-    display: flex; flex: 0 0 auto; order: 2;
-    min-height: var(--tabbar-h);
-    padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
-    background: var(--sidebar-bg);
-    border-top: 1px solid var(--divider);
-  }
-  .tab {
-    flex: 1; display: grid; place-items: center; align-content: center; gap: 3px;
-    color: var(--text-3); text-decoration: none; font-size: 10.5px;
-  }
-  .tab .i { width: 20px; height: 20px; }
-  .tab.active { color: var(--text); }
-  .content { order: 1; }
-}
 
 /* ── 通用文字元素 ───────────────────────── */
 .section-label {
@@ -305,35 +284,6 @@ button:disabled { opacity: .45; cursor: default; }
 .menu-item:hover { background: var(--hover); }
 .menu-item.danger { color: var(--danger); }
 .menu-item.danger:hover { background: rgba(255, 59, 48, 0.08); }
-
-@media (max-width: 600px) {
-  /* 纵向布局：名称状态 → 地址 → 大按钮 */
-  .dev-row { grid-template-columns: 1fr; gap: 10px; padding: 16px 6px; }
-  .dev-id { grid-column: 1; grid-row: 1; }
-  .dev-detail { grid-column: 1; grid-row: 2; flex-direction: row; align-items: baseline; gap: 10px; }
-  .dev-sub { display: none; }                  /* MAC/Port 默认隐藏，详情页可看 */
-  .dev-actions { grid-column: 1; grid-row: 3; }
-  .dev-actions .icon-btn { display: none; }
-  .dev-actions .more-btn { display: grid; width: 42px; height: 46px; border-radius: 10px; }
-
-  /* 拇指友好的主操作按钮：浅绿底，明确但不刺眼 */
-  .wake-link {
-    flex: 1; width: auto; height: 46px;
-    justify-content: center;
-    font-size: 15px; font-weight: 600;
-    gap: 6px; border-radius: 10px;
-    background: var(--wake-bg);
-    border: 1px solid transparent;
-    color: var(--wake-text);
-  }
-  .wake-link:hover:not(:disabled) { background: #DFF4E5; border-color: transparent; }
-  .wake-link:active:not(:disabled) { background: #D2EEDA; }
-  .wake-link .wake-arrow { width: 15px; height: 15px; margin-left: 4px; }
-  .wake-link .wake-suffix { display: inline; }
-  .wake-link.is-online { color: var(--text-3); background: var(--sidebar-bg); border-color: var(--divider-soft); }
-  .wake-link.is-online:hover:not(:disabled) { color: var(--text-2); background: var(--hover); }
-  .wake-link.is-waking { background: var(--wake-bg); color: var(--warn); border-color: transparent; }
-}
 
 /* ── 设备详情 ───────────────────────────── */
 .detail { display: grid; gap: 36px; }
@@ -487,3 +437,88 @@ textarea.codearea { min-height: 190px; resize: vertical; font-family: var(--mono
 .sheet-card::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.16); border-radius: 8px; }
 .view::-webkit-scrollbar-thumb:hover, .terminal::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.26); }
 .view::-webkit-scrollbar-track, .terminal::-webkit-scrollbar-track, .dlog::-webkit-scrollbar-track { background: transparent; }
+
+/* ══ 手机 / 平板（<900px）：iOS 原生风格 ══
+   放在文件末尾，保证覆盖上面的基础样式 */
+@media (max-width: 899px) {
+  .app { flex-direction: column; }
+  .sidebar { display: none; }
+  .content { order: 1; background: var(--window); }
+  .view { background: var(--window); }
+
+  /* 大标题导航（iOS Large Title） */
+  .topbar { padding: 18px 20px 10px; border-bottom: 0; }
+  .topbar h1 { font-size: 28px; font-weight: 700; letter-spacing: -.3px; }
+  .topbar-actions .icon-btn { width: 34px; height: 34px; }
+  .view-inner { padding: 0 0 24px; }
+
+  /* 底部标签栏：白底 + 发丝顶线，选中项用主题色 */
+  .tabbar {
+    display: flex; flex: 0 0 auto; order: 2;
+    min-height: var(--tabbar-h);
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.94);
+    border-top: 1px solid var(--divider-soft);
+  }
+  .tab {
+    flex: 1; display: grid; place-items: center; align-content: center; gap: 3px;
+    color: var(--text-3); text-decoration: none; font-size: 10.5px;
+  }
+  .tab .i { width: 22px; height: 22px; }
+  .tab.active { color: var(--accent); }
+
+  /* 设备列表：白底圆角分组 + 发丝分隔线（iOS Settings 分组） */
+  .dev-list {
+    margin: 4px 16px 0;
+    background: var(--content);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .dev-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "id actions" "detail actions";
+    gap: 2px 12px;
+    padding: 13px 16px;
+  }
+  .dev-row:hover { background: transparent; }
+  .dev-id { grid-area: id; }
+  .dev-name { font-size: 17px; }
+  .dev-detail { grid-area: detail; flex-direction: row; }
+  .dev-addr { font-size: 13px; color: var(--text-3); }
+  .dev-sub { display: none; }                        /* MAC 进详情页 */
+  .dev-actions { grid-area: actions; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .dev-actions .more-btn { display: grid; width: 30px; height: 30px; }
+
+  /* 唤醒：药丸形浅绿按钮（iOS 风格） */
+  .wake-link {
+    flex: 0 0 auto;
+    height: 40px; padding: 0 16px;
+    border-radius: 999px;
+    background: var(--wake-bg);
+    border: 0;
+    color: var(--wake-text);
+    font-size: 14px; font-weight: 600;
+  }
+  .wake-link:hover:not(:disabled) { background: #DFF4E5; }
+  .wake-link:active:not(:disabled) { background: #D2EEDA; }
+  .wake-link .wake-arrow { width: 15px; height: 15px; margin-left: 3px; }
+  .wake-link .wake-suffix { display: inline; }
+  .wake-link.is-online { color: var(--text-3); background: var(--sidebar-bg); }
+  .wake-link.is-online:hover:not(:disabled) { color: var(--text-2); background: var(--hover); }
+  .wake-link.is-waking { background: var(--wake-bg); color: var(--warn); }
+
+  /* 详情 / 设置 / 日志：同款分组卡片化 */
+  .detail { padding: 4px 16px 0; gap: 26px; }
+  .detail section, .settings > section {
+    background: var(--content);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    padding: 0 16px;
+  }
+  .detail .section-label, .settings .section-label { padding: 14px 0 4px; }
+  .detail-hero { padding: 4px 2px 0; }
+  .settings { gap: 20px; }
+  .logs-page { padding: 0 16px; }
+  .empty { padding: 72px 20px; }
+}

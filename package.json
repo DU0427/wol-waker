@@ -5,7 +5,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "test": "node src/core/core.test.mjs",
-    "sync:web": "node scripts/sync-web.mjs",
+    "sync:web": "node scripts/sync-web.mjs && node scripts/sync-vendor.mjs",
     "electron": "npm run sync:web && electron .",
     "dist:win": "npm run sync:web && electron-builder --win portable",
     "icons": "electron scripts/render-icon.cjs && node scripts/make-android-icons.cjs && node scripts/make-ico.cjs",
@@ -41,5 +41,9 @@
     "portable": {
       "artifactName": "wol-waker-${version}-win-x64.exe"
     }
+  },
+  "dependencies": {
+    "@ionic/core": "^9.0.3",
+    "ionicons": "^8.1.0"
   }
 }

@@ -112,13 +112,49 @@ const Views = (() => {
     wake.dataset.wake = d.id;
     wake.innerHTML = '<span class="wake-label">唤醒</span><span class="wake-suffix">电脑</span><svg class="i wake-arrow"><use href="#i-arrow"/></svg>';
     wake.onclick = (ev) => { ev.stopPropagation(); Actions.wake(d.id); };
-    const edit = iconBtn('i-pencil', '编辑', (ev) => { ev.stopPropagation(); Actions.edit(d.id); });
-    actions.append(wake, edit);
+    const more = iconBtn('i-more', '更多操作', (ev) => { ev.stopPropagation(); openMoreMenu(d, more); });
+    more.classList.add('more-btn');
+    actions.append(wake, more);
 
     row.append(id, detail, actions);
     row.onclick = () => { location.hash = '#/device/' + encodeURIComponent(d.id); };
     Actions.refreshWake(d.id);
     return row;
+  }
+
+  /* ── 行内更多菜单：检查在线 / 编辑 / 删除 ── */
+  function closeMenus() {
+    document.querySelectorAll('.row-menu').forEach((m) => m.remove());
+  }
+  document.addEventListener('click', closeMenus);
+
+  function openMoreMenu(d, anchor) {
+    closeMenus();
+    const menu = el('div', 'row-menu');
+    const item = (label, danger, fn) => {
+      const b = el('button', 'menu-item' + (danger ? ' danger' : ''), label);
+      b.type = 'button';
+      b.onclick = (e) => { e.stopPropagation(); closeMenus(); fn(); };
+      menu.appendChild(b);
+    };
+    item('检查在线', false, () => Actions.check(d.id, false));
+    item('编辑', false, () => Actions.edit(d.id));
+    item('删除', true, () => Actions.remove(d.id));
+    document.body.appendChild(menu);
+
+    const r = anchor.getBoundingClientRect();
+    const mw = 140, mh = 128;
+    let left = r.right - mw;
+    if (left < 8) left = 8;
+    let top = r.bottom + 4;
+    if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 4);
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+
+    setTimeout(() => {
+      const closer = (e) => { if (!menu.contains(e.target)) { closeMenus(); document.removeEventListener('click', closer); } };
+      document.addEventListener('click', closer);
+    }, 0);
   }
 
   /* ── 设备详情 ─────────────────────────── */

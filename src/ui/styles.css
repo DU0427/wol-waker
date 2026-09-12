@@ -280,6 +280,32 @@ button:disabled { opacity: .45; cursor: default; }
 
 .dev-actions { display: flex; align-items: center; gap: 2px; }
 
+/* 行内更多菜单（检查在线 / 编辑 / 删除） */
+.row-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 140px;
+  padding: 4px;
+  display: grid;
+  gap: 1px;
+  background: var(--content);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-md);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.16);
+}
+.menu-item {
+  display: flex; align-items: center;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  font-size: 13px; color: var(--text);
+  text-align: left;
+  transition: background .1s ease;
+}
+.menu-item:hover { background: var(--hover); }
+.menu-item.danger { color: var(--danger); }
+.menu-item.danger:hover { background: rgba(255, 59, 48, 0.08); }
+
 @media (max-width: 600px) {
   /* 纵向布局：名称状态 → 地址 → 大按钮 */
   .dev-row { grid-template-columns: 1fr; gap: 10px; padding: 16px 6px; }
@@ -287,11 +313,12 @@ button:disabled { opacity: .45; cursor: default; }
   .dev-detail { grid-column: 1; grid-row: 2; flex-direction: row; align-items: baseline; gap: 10px; }
   .dev-sub { display: none; }                  /* MAC/Port 默认隐藏，详情页可看 */
   .dev-actions { grid-column: 1; grid-row: 3; }
-  .dev-actions .icon-btn { display: none; }    /* 手机上不堆小图标，编辑在详情页 */
+  .dev-actions .icon-btn { display: none; }
+  .dev-actions .more-btn { display: grid; width: 42px; height: 46px; border-radius: 10px; }
 
   /* 拇指友好的主操作按钮：浅绿底，明确但不刺眼 */
   .wake-link {
-    width: 100%; height: 46px;
+    flex: 1; width: auto; height: 46px;
     justify-content: center;
     font-size: 15px; font-weight: 600;
     gap: 6px; border-radius: 10px;

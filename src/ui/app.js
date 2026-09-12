@@ -1,9 +1,11 @@
-// 应用入口：路由、导航、动作、表单
+// 应用入口：路由、导航、动作、表单（基于 Ionic 组件）
 'use strict';
 
 const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const VERSION = 'v0.1.0';
+
+const ST_COLORS = { online: 'success', waking: 'warning', checking: 'warning', offline: 'medium' };
 
 /* ── 动作层：视图通过 Actions 触发 ───────── */
 const Actions = (() => {
@@ -14,21 +16,18 @@ const Actions = (() => {
 
   function setState(id, s) {
     states[id] = s;
-    document.querySelectorAll(`.dot[data-dot="${id}"]`).forEach((dot) => { dot.dataset.state = s; });
-    document.querySelectorAll(`[data-status="${id}"]`).forEach((n) => {
-      n.dataset.state = s;
-      n.textContent = (window.STATUS_LABEL || {})[s] || '未检查';
+    document.querySelectorAll(`[data-dot="${id}"]`).forEach((ic) => {
+      ic.color = ST_COLORS[s] || 'medium';
+      ic.name = s === 'online' ? 'ellipse' : 'ellipse-outline';
     });
-    document.querySelectorAll(`.dev-row[data-id="${id}"]`).forEach((c) => c.classList.toggle('is-online', s === 'online'));
+    document.querySelectorAll(`[data-status="${id}"]`).forEach((n) => {
+      n.textContent = (window.STATUS_LABEL || {})[s] || '未检查';
+      n.classList.toggle('online', s === 'online');
+    });
     applyWakeButtons(id);
   }
 
-  /* 唤醒按钮状态联动：
-     unknown/offline → 「唤醒」         （主要操作，绿色）
-     online          → 「已在线 ✓」     （弱化，灰色）
-     waking          → 「唤醒中…」      （禁用，橙色）
-     success 闪回   → 「已唤醒 ✓」     （绿色）
-     等待上线       → 「等待上线…」     （禁用） */
+  /* 唤醒按钮状态联动 */
   function wakeButtons(id) {
     return Array.from(document.querySelectorAll(`.wake-link[data-wake="${id}"]`));
   }
@@ -37,9 +36,14 @@ const Actions = (() => {
     const suffix = btn.querySelector('.wake-suffix');
     if (el) el.textContent = text;
     if (suffix) suffix.style.display = text === '唤醒' ? '' : 'none';
-    btn.classList.remove('is-waking', 'is-success', 'is-online');
-    if (mode) btn.classList.add(mode);
     btn.disabled = !!disabled;
+    if (mode === 'is-online' || mode === 'is-waking') {
+      btn.fill = 'clear';
+      btn.color = 'medium';
+    } else {
+      btn.fill = 'solid';
+      btn.color = 'wake';
+    }
   }
   function applyWakeButtons(id, forced) {
     const s = states[id] || 'unknown';
@@ -127,22 +131,37 @@ const Actions = (() => {
   }
 
   function addDevice() { openForm(null); }
-
   function edit(id) { openForm(Store.get(id)); }
 
-  function remove(id) {
+  function confirmDialog(header, message, dangerText) {
+    return new Promise((resolve) => {
+      const a = document.createElement('ion-alert');
+      a.header = header;
+      a.message = message;
+      a.buttons = [
+        { text: '取消', role: 'cancel', handler: () => resolve(false) },
+        { text: dangerText || '确定', role: dangerText ? 'destructive' : 'confirm', handler: () => resolve(true) },
+      ];
+      document.body.appendChild(a);
+      a.present();
+    });
+  }
+
+  async function remove(id) {
     const d = Store.get(id);
     if (!d) return;
-    if (!window.confirm(`删除「${d.name || d.host}」？`)) return;
+    const ok = await confirmDialog('删除设备', `确定删除「${d.name || d.host}」？此操作不可恢复。`, '删除');
+    if (!ok) return;
     Store.remove(id);
     Log.add('info', `已删除 ${d.name || d.host}`);
     if (parseHash().name === 'device') location.hash = '#/devices';
     else render();
   }
 
-  function removeAll() {
+  async function removeAll() {
     if (!Store.list().length) { Log.add('info', '当前没有设备'); return; }
-    if (!window.confirm('清空全部设备？此操作不可恢复')) return;
+    const ok = await confirmDialog('清空全部设备', '将删除所有设备，此操作不可恢复。', '清空');
+    if (!ok) return;
     Store.save([]);
     Log.add('info', '已清空全部设备');
     if (parseHash().name === 'device') location.hash = '#/devices';
@@ -156,7 +175,7 @@ const Actions = (() => {
       Log.add('err', '默认唤醒端口非法：1-65535');
       return;
     }
-    const raw = $('sCheckPorts').value.trim();
+    const raw = String($('sCheckPorts').value || '').trim();
     if (raw) {
       for (const p of raw.split(/[^0-9]+/).filter(Boolean)) {
         const n = Number(p);
@@ -170,12 +189,11 @@ const Actions = (() => {
   }
 
   function exportData() {
-    const json = JSON.stringify(Store.list(), null, 2);
-    openDataSheet('导出设备数据', json, null);
+    dataModal('导出设备数据', JSON.stringify(Store.list(), null, 2), null);
   }
 
   function importData() {
-    openDataSheet('导入设备数据', '', (text) => {
+    dataModal('导入设备数据', '', (text) => {
       let arr;
       try { arr = JSON.parse(text); }
       catch { Log.add('err', '导入失败：JSON 格式错误'); return; }
@@ -205,40 +223,35 @@ const Actions = (() => {
   return { state, refreshWake, wake, check, edit, addDevice, remove, removeAll, saveDefaults, exportData, importData };
 })();
 
-/* ── 通用数据弹窗（导出/导入 JSON） ─────── */
-function openDataSheet(title, initial, onSave) {
-  const sheet = document.createElement('div');
-  sheet.className = 'sheet';
-  sheet.innerHTML =
-    '<div class="backdrop" data-close></div>' +
-    '<div class="sheet-card">' +
-      '<div class="sheet-head"><h2></h2><button type="button" class="icon-btn" data-close aria-label="关闭">' +
-        '<svg class="i"><use href="#i-x"/></svg></button></div>' +
-      '<div class="sheet-body"><textarea class="codearea" spellcheck="false"></textarea></div>' +
-      '<div class="sheet-foot"><button type="button" class="ghost-btn" data-close>关闭</button>' +
-        '<button type="button" class="primary-btn" data-save></button></div>' +
-    '</div>';
-  sheet.querySelector('h2').textContent = title;
-  const ta = sheet.querySelector('textarea');
-  ta.value = initial || '';
-  if (!onSave) { ta.readOnly = true; ta.placeholder = '（无数据）'; }
-  else ta.placeholder = '在此粘贴 JSON…';
-
-  const saveBtn = sheet.querySelector('[data-save]');
-  saveBtn.textContent = onSave ? '导入' : '复制';
-  sheet.querySelectorAll('[data-close]').forEach((b) => { b.onclick = () => sheet.remove(); });
-
+/* ── 数据弹窗（导出 / 导入 JSON） ───────── */
+function dataModal(title, initial, onSave) {
+  const modal = document.createElement('ion-modal');
+  modal.innerHTML =
+    '<ion-header><ion-toolbar>' +
+      '<ion-buttons slot="start"><ion-button fill="clear" data-close>取消</ion-button></ion-buttons>' +
+      '<ion-title>' + title + '</ion-title>' +
+      '<ion-buttons slot="end"><ion-button fill="solid" data-save>' + (onSave ? '导入' : '复制') + '</ion-button></ion-buttons>' +
+    '</ion-toolbar></ion-header>' +
+    '<ion-content class="ion-padding">' +
+      '<ion-textarea id="dataArea" rows="14" class="codearea" spellcheck="false"' + (onSave ? ' placeholder="在此粘贴 JSON…"' : '') + '></ion-textarea>' +
+    '</ion-content>';
+  document.body.appendChild(modal);
+  const area = modal.querySelector('#dataArea');
+  area.value = initial || '';
+  modal.querySelectorAll('[data-close]').forEach((b) => { b.onclick = () => modal.dismiss(); });
+  const save = modal.querySelector('[data-save]');
   if (onSave) {
-    saveBtn.onclick = () => { onSave(ta.value); sheet.remove(); };
+    save.onclick = () => { onSave(area.value); modal.dismiss(); };
   } else {
-    saveBtn.onclick = () => {
-      ta.focus(); ta.select();
-      try { document.execCommand('copy'); saveBtn.textContent = '已复制'; }
-      catch { saveBtn.textContent = '请手动复制'; }
+    save.onclick = () => {
+      area.getInputElement().then((inp) => {
+        inp.select();
+        document.execCommand('copy');
+        save.innerHTML = '已复制';
+      }).catch(() => { save.innerHTML = '手动复制'; });
     };
   }
-  document.body.appendChild(sheet);
-  setTimeout(() => ta.focus(), 60);
+  modal.present();
 }
 
 /* ── 路由 ───────────────────────────────── */
@@ -255,8 +268,8 @@ const TITLES = { devices: '设备', device: '设备详情', logs: '日志', sett
 
 function render() {
   const r = parseHash();
-  const view = $('view');
-  view.textContent = '';
+  const inner = $('viewInner');
+  inner.textContent = '';
 
   $('btnBack').hidden = r.name !== 'device';
   $('pageTitle').textContent = TITLES[r.name] || '设备';
@@ -264,28 +277,24 @@ function render() {
   const acts = $('topbarActions');
   acts.textContent = '';
   if (r.name === 'devices') {
-    const add = document.createElement('button');
-    add.type = 'button';
-    add.className = 'icon-btn accent';
+    const add = document.createElement('ion-button');
+    add.fill = 'clear';
     add.title = '添加设备';
-    add.setAttribute('aria-label', '添加设备');
-    add.innerHTML = '<svg class="i"><use href="#i-plus"/></svg>';
+    add.innerHTML = '<ion-icon name="add" slot="icon-only"></ion-icon>';
     add.onclick = () => openForm(null);
     acts.appendChild(add);
   } else if (r.name === 'logs') {
-    const clr = document.createElement('button');
-    clr.type = 'button';
-    clr.className = 'ghost-btn sm';
-    clr.textContent = '清空';
+    const clr = document.createElement('ion-button');
+    clr.fill = 'clear';
+    clr.innerHTML = '清空';
     clr.onclick = () => Log.clear();
     acts.appendChild(clr);
   }
 
   const key = r.name === 'device' ? 'devices' : r.name;
-  document.querySelectorAll('[data-nav]').forEach((a) => a.classList.toggle('active', a.dataset.nav === key));
+  document.querySelectorAll('.nav-item[data-nav]').forEach((a) => a.classList.toggle('active', a.dataset.nav === key));
+  document.querySelectorAll('ion-tab-button[data-nav]').forEach((t) => { t.selected = t.dataset.nav === key; });
 
-  const inner = document.createElement('div');
-  inner.className = 'view-inner';
   if (r.name === 'device') {
     if (!Store.get(r.id)) { location.hash = '#/devices'; return; }
     inner.appendChild(Views.deviceDetail(r.id));
@@ -296,13 +305,17 @@ function render() {
   } else {
     inner.appendChild(Views.devices());
   }
-  view.appendChild(inner);
 
   document.querySelectorAll('[data-log]').forEach((c) => Views.renderLogInto(c));
-  view.scrollTop = 0;
+  const content = document.querySelector('.view');
+  if (content && content.scrollToTop) content.scrollToTop();
+
+  // 元素已入 DOM 后刷新唤醒按钮初始状态
+  if (r.name === 'device') Actions.refreshWake(r.id);
+  else if (r.name === 'devices') Store.list().forEach((d) => Actions.refreshWake(d.id));
 }
 
-/* ── 设备表单 ───────────────────────────── */
+/* ── 设备表单（ion-modal） ──────────────── */
 let editingId = null;
 
 function openForm(d) {
@@ -311,17 +324,17 @@ function openForm(d) {
   $('formTitle').textContent = d ? '编辑设备' : '添加设备';
   $('fName').value = d ? (d.name || '') : '';
   $('fHost').value = d ? d.host : '';
-  $('fPort').value = d ? d.port : s.wakePort;
+  $('fPort').value = String(d ? d.port : s.wakePort);
   $('fCheck').value = d ? (d.checkPorts || '') : s.checkPorts;
   $('fMac').value = d ? d.mac : '';
   $('fSecure').value = d ? (d.secureOn || '') : '';
   hideFormError();
-  $('sheet').hidden = false;
-  setTimeout(() => { (d ? $('fHost') : $('fName')).focus(); }, 60);
+  $('formModal').present();
+  setTimeout(() => { (d ? $('fHost') : $('fName')).setFocus(); }, 250);
 }
 
 function closeForm() {
-  $('sheet').hidden = true;
+  $('formModal').dismiss();
   editingId = null;
 }
 
@@ -356,16 +369,15 @@ function validate(dev) {
   return '';
 }
 
-$('form').addEventListener('submit', (e) => {
-  e.preventDefault();
+function saveDevice() {
   const dev = {
     id: editingId || Store.newId(),
-    name: $('fName').value.trim(),
-    host: $('fHost').value.trim(),
+    name: String($('fName').value || '').trim(),
+    host: String($('fHost').value || '').trim(),
     port: Number($('fPort').value),
-    mac: $('fMac').value.trim(),
-    secureOn: $('fSecure').value.trim(),
-    checkPorts: $('fCheck').value.trim(),
+    mac: String($('fMac').value || '').trim(),
+    secureOn: String($('fSecure').value || '').trim(),
+    checkPorts: String($('fCheck').value || '').trim(),
   };
   const err = validate(dev);
   if (err) { showFormError(err); return; }
@@ -377,7 +389,7 @@ $('form').addEventListener('submit', (e) => {
   closeForm();
   render();
   if (window.WolNative) Actions.check(dev.id, true);
-});
+}
 
 /* ── MAC 输入：自动大写 + 自动补冒号 ─────── */
 function caretForHex(formatted, hexCount) {
@@ -392,37 +404,23 @@ function caretForHex(formatted, hexCount) {
   return formatted.length;
 }
 
-function formatMacField(el) {
-  const pos = el.selectionStart;
-  const hexBefore = el.value.slice(0, pos).toUpperCase().replace(/[^0-9A-F]/g, '').length;
-  const raw = el.value.toUpperCase().replace(/[^0-9A-F]/g, '').slice(0, 12);
-  const formatted = raw.replace(/(.{2})(?=.)/g, '$1:');
-  el.value = formatted;
-  const caret = caretForHex(formatted, hexBefore);
-  el.setSelectionRange(caret, caret);
-}
-
 function attachMacInput(el) {
-  el.addEventListener('input', () => formatMacField(el));
-  el.addEventListener('keydown', (e) => {
-    if (e.key !== 'Backspace') return;
-    const s = el.selectionStart;
-    if (s !== el.selectionEnd || s === 0) return;
-    if (el.value[s - 1] === ':') {
-      e.preventDefault();
-      el.value = el.value.slice(0, s - 2) + el.value.slice(s - 1);
-      el.setSelectionRange(s - 2, s - 2);
-      formatMacField(el);
-    }
+  el.addEventListener('ionInput', () => {
+    const inner = el.querySelector('input');
+    const pos = inner ? inner.selectionStart : String(el.value).length;
+    const hexBefore = String(el.value).slice(0, pos).toUpperCase().replace(/[^0-9A-F]/g, '').length;
+    const raw = String(el.value).toUpperCase().replace(/[^0-9A-F]/g, '').slice(0, 12);
+    const formatted = raw.replace(/(.{2})(?=.)/g, '$1:');
+    el.value = formatted;
+    const caret = caretForHex(formatted, hexBefore);
+    if (inner) { try { inner.setSelectionRange(caret, caret); } catch (e) { /* ignore */ } }
   });
 }
 
 /* ── 事件绑定 ───────────────────────────── */
 $('btnBack').onclick = () => { location.hash = '#/devices'; };
-document.querySelectorAll('[data-close]').forEach((el) => { el.onclick = closeForm; });
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && !$('sheet').hidden) closeForm();
-});
+$('btnSave').onclick = saveDevice;
+$('btnCancel').onclick = closeForm;
 attachMacInput($('fMac'));
 attachMacInput($('fSecure'));
 Log.onChange(() => { document.querySelectorAll('[data-log]').forEach((c) => Views.renderLogInto(c)); });
@@ -434,6 +432,8 @@ if (!location.hash) location.hash = '#/devices';
 render();
 
 Log.add('info', 'wol-waker 就绪 · UDP 直发魔术包，无需后端');
+// 等 Ionic 完全水合后，确保唤醒按钮状态正确
+setTimeout(() => { Store.list().forEach((d) => Actions.refreshWake(d.id)); }, 800);
 if (window.WolNative) {
   Log.add('ok', '原生桥接已连接');
   const devs = Store.list();

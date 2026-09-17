@@ -1,10 +1,10 @@
 // Electron 主进程：Windows 端 UDP 直发（无后端 serve）
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
-const dgram = require('node:dgram');
 const dns = require('node:dns').promises;
 const net = require('node:net');
 const { buildMagicPacket, validateTarget } = require('../src/core/wol.js');
+const { sendUdpOnce } = require('./udp.cjs');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -17,17 +17,6 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.cjs') },
   });
   win.loadFile(path.join(__dirname, '..', 'src', 'ui', 'index.html'));
-}
-
-async function sendUdpOnce(packet, host, port) {
-  const ip = await dns.lookup(host).then((r) => r.address);
-  await new Promise((resolve, reject) => {
-    const sock = dgram.createSocket('udp4');
-    sock.send(Buffer.from(packet), port, ip, (err) => {
-      sock.close();
-      err ? reject(err) : resolve(ip);
-    });
-  }).then((ip) => ip);
 }
 
 ipcMain.handle('wol:send', async (_evt, target) => {

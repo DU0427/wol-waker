@@ -12,6 +12,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getBridge().getWebView().addJavascriptInterface(new WolAndroidBridge(), "WolAndroid");
+        // 桥接需要 WebView 引用：异步结果通过 evaluateJavascript 回调回页面
+        getBridge().getWebView().addJavascriptInterface(new WolAndroidBridge(getBridge().getWebView()), "WolAndroid");
     }
 }

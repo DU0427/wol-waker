@@ -82,13 +82,18 @@ ion-header.appbar ion-toolbar {
   --border-color: rgba(0, 0, 0, 0.12);
 }
 .view { --background: var(--ion-background-color); }
-.view-inner { max-width: 1040px; margin: 0 auto; padding: 24px 28px; }
+/* height:100% 让页面内部的 flex 高度链生效（日志页终端撑满可视区）；
+   内容超出时依旧由 ion-content 的滚动容器滚动 */
+.view-inner { height: 100%; max-width: 1040px; margin: 0 auto; padding: 24px 28px; }
 
 /* ── 设备列表 ───────────────────────────── */
 .dev-list { width: 100%; margin: 0; }
+/* Ionic 的 inset 会额外加 16px 外边距，把卡片顶出内容区右侧（手机端溢出 4~26px）；统一压掉 */
+.dev-list, .info-list, .settings ion-list { margin-inline: 0 !important; }
 .dev-item { --padding-start: 16px; --padding-end: 12px; --min-height: 66px; --inner-padding-end: 8px; }
-.dev-name { margin: 0; font-size: 16px; font-weight: 600; color: #1D1D1F; }
-.dev-item p { margin: 3px 0 0; font-size: 12.5px; color: #8E8E93; }
+.dev-item ion-label { min-width: 0; overflow: hidden; }
+.dev-name { margin: 0; font-size: 16px; font-weight: 600; color: #1D1D1F; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dev-item p { margin: 3px 0 0; font-size: 12.5px; color: #8E8E93; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* MAC 仅桌面显示（手机端信息进详情页） */
 .dev-mac { display: none !important; }
 @media (min-width: 900px) {
@@ -133,7 +138,7 @@ ion-header.appbar ion-toolbar {
 .detail-host { font-size: 13.5px; color: #6E6E73; }
 .detail-status { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; color: #8E8E93; }
 .detail-status .status-text.online { color: #34C759; font-weight: 600; }
-.detail-hero .wake-link { margin-top: 18px; }
+.detail-hero .wake-link { margin-top: 18px; justify-self: start; }
 
 .info-list { margin: 0; }
 .info-row { --padding-start: 16px; --padding-end: 16px; --min-height: 48px; }
@@ -192,14 +197,15 @@ ion-header.appbar ion-toolbar {
 .settings { display: grid; gap: 24px; }
 .set-group .section-label { padding: 2px 4px 8px; }
 .set-row { --padding-start: 16px; --min-height: 52px; }
-.set-row .k b { font-size: 14px; font-weight: 500; color: #1D1D1F; }
-.set-row .k small { font-size: 12px; color: #8E8E93; }
+.set-row .k { flex: 1 1 auto; min-width: 0; }
+.set-row .k b { display: block; font-size: 14px; font-weight: 500; color: #1D1D1F; }
+.set-row .k small { display: block; margin-top: 2px; font-size: 12px; color: #8E8E93; }
 .set-row ion-input { --padding-start: 8px; max-width: 150px; text-align: right; }
 
 /* ── 空状态 ─────────────────────────────── */
 .empty { text-align: center; padding: 88px 24px; color: #8E8E93; }
 .empty strong { display: block; color: #6E6E73; font-weight: 600; font-size: 17px; margin-bottom: 6px; }
-.empty span { font-size: 13.5px; }
+.empty span { display: block; font-size: 13.5px; }
 .empty .primary-btn { margin-top: 20px; --border-radius: 12px; }
 
 /* ── 表单弹窗 ───────────────────────────── */
@@ -220,12 +226,15 @@ ion-header.appbar ion-toolbar {
     text-align: left; padding-inline-start: 4px;
   }
 
+  /* 详情页是「push 页」：返回键 + 居中标题。否则 30px 大标题会被返回键压住 */
+  body.is-detail ion-header.appbar ion-toolbar { --min-height: 48px; --border-width: 0 0 0.55px 0; --padding-start: 6px; --padding-end: 6px; }
+  body.is-detail ion-header.appbar ion-title { font-size: 17px; font-weight: 600; letter-spacing: 0; text-align: center; padding-inline: 0; }
+
   .view-inner { padding: 4px 12px 24px; }
   .dev-list { margin: 4px 0 0; }
 
   .detail { padding: 4px 2px; }
-  .info-list { margin: 0 -12px; width: calc(100% + 24px); }
-  .settings > * { margin: 0 -12px; width: calc(100% + 24px); }
+  .detail-hero .wake-link { justify-self: stretch; }
   .empty { padding: 72px 16px; }
 }
 

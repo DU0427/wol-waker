@@ -168,24 +168,28 @@ const Actions = (() => {
     else render();
   }
 
+  function fail(m) { Log.add('err', m); notify(m, 'danger'); }
+
   function saveDefaults() {
     const s = Store.settings();
     const wakePort = Number($('sWakePort').value);
     if (!Number.isInteger(wakePort) || wakePort < 1 || wakePort > 65535) {
-      Log.add('err', '默认唤醒端口非法：1-65535');
+      fail('默认唤醒端口非法：1-65535');
       return;
     }
     const raw = String($('sCheckPorts').value || '').trim();
     if (raw) {
       for (const p of raw.split(/[^0-9]+/).filter(Boolean)) {
         const n = Number(p);
-        if (!Number.isInteger(n) || n < 1 || n > 65535) { Log.add('err', `默认检查端口非法：${p}`); return; }
+        if (!Number.isInteger(n) || n < 1 || n > 65535) { fail(`默认检查端口非法：${p}`); return; }
       }
     }
     s.wakePort = wakePort;
     s.checkPorts = raw;
     Store.saveSettings(s);
-    Log.add('ok', `已保存默认值：唤醒端口 ${wakePort}，检查端口 ${raw || '3389,22'}`);
+    const msg = `已保存默认值：唤醒端口 ${wakePort}，检查端口 ${raw || '3389,22'}`;
+    Log.add('ok', msg);
+    notify(msg, 'success');
   }
 
   function exportData() {
@@ -196,25 +200,36 @@ const Actions = (() => {
     dataModal('导入设备数据', '', (text) => {
       let arr;
       try { arr = JSON.parse(text); }
-      catch { Log.add('err', '导入失败：JSON 格式错误'); return; }
-      if (!Array.isArray(arr)) { Log.add('err', '导入失败：顶层必须是数组'); return; }
+      catch { fail('导入失败：JSON 格式错误'); return; }
+      if (!Array.isArray(arr)) { fail('导入失败：顶层必须是数组'); return; }
       const valid = [];
+      const usedIds = new Set();
+      let skipped = 0;
       for (const d of arr) {
-        if (!d || typeof d !== 'object' || !d.host || !d.mac) continue;
+        if (!d || typeof d !== 'object' || !d.host || !d.mac) { skipped++; continue; }
+        let mac;
+        try { mac = window.WolCore ? window.WolCore.normalizeMac(String(d.mac)) : String(d.mac).toUpperCase(); }
+        catch { skipped++; continue; }                            // MAC 非法直接跳过，不塞进列表
+        const port = Number(d.port);
+        let id = d.id || Store.newId();
+        if (usedIds.has(id)) id = Store.newId();                 // 同批 id 冲突就换一个
+        usedIds.add(id);
         valid.push({
-          id: d.id || Store.newId(),
-          name: d.name || d.host,
-          host: String(d.host),
-          port: Number(d.port) || 9,
-          mac: String(d.mac).toUpperCase(),
-          secureOn: d.secureOn || '',
-          checkPorts: d.checkPorts || '',
+          id,
+          name: String(d.name || d.host),
+          host: String(d.host).trim(),
+          port: Number.isInteger(port) && port >= 1 && port <= 65535 ? port : 9,
+          mac,
+          secureOn: typeof d.secureOn === 'string' ? d.secureOn.trim() : '',
+          checkPorts: d.checkPorts ? String(d.checkPorts) : '',
           lastWakeAt: d.lastWakeAt || undefined,
         });
       }
-      if (!valid.length) { Log.add('err', '导入失败：没有可用设备（需要 host 和 mac）'); return; }
+      if (!valid.length) { fail('导入失败：没有可用设备（需要 host 和合法 MAC）'); return; }
       Store.save(valid);
-      Log.add('ok', `已导入 ${valid.length} 台设备`);
+      const msg = skipped ? `已导入 ${valid.length} 台，跳过 ${skipped} 条非法数据` : `已导入 ${valid.length} 台设备`;
+      Log.add('ok', msg);
+      notify(msg, 'success');
       if (parseHash().name === 'device') location.hash = '#/devices';
       else render();
     });
@@ -222,6 +237,17 @@ const Actions = (() => {
 
   return { state, refreshWake, wake, check, edit, addDevice, remove, removeAll, saveDefaults, exportData, importData };
 })();
+
+/* ── 轻提示（ion-toast）：设置页等场景的即时反馈 ── */
+function notify(message, color) {
+  const t = document.createElement('ion-toast');
+  t.message = message;
+  t.duration = 2200;
+  t.position = 'bottom';
+  if (color) t.color = color;
+  document.body.appendChild(t);
+  t.present().then(() => t.onDidDismiss()).then(() => t.remove()).catch(() => t.remove());
+}
 
 /* ── 数据弹窗（导出 / 导入 JSON） ───────── */
 function dataModal(title, initial, onSave) {
@@ -272,6 +298,7 @@ function render() {
   inner.textContent = '';
 
   $('btnBack').hidden = r.name !== 'device';
+  document.body.classList.toggle('is-detail', r.name === 'device'); // 详情页用紧凑居中标题（见 styles.css）
   $('pageTitle').textContent = TITLES[r.name] || '设备';
 
   const acts = $('topbarActions');
@@ -423,7 +450,16 @@ $('btnSave').onclick = saveDevice;
 $('btnCancel').onclick = closeForm;
 attachMacInput($('fMac'));
 attachMacInput($('fSecure'));
-Log.onChange(() => { document.querySelectorAll('[data-log]').forEach((c) => Views.renderLogInto(c)); });
+// 连续日志（启动批量检查、唤醒轮询）合并到一帧只重绘一次，避免逐条整块重建 DOM
+let logRenderQueued = false;
+Log.onChange(() => {
+  if (logRenderQueued) return;
+  logRenderQueued = true;
+  requestAnimationFrame(() => {
+    logRenderQueued = false;
+    document.querySelectorAll('[data-log]').forEach((c) => Views.renderLogInto(c));
+  });
+});
 window.addEventListener('hashchange', render);
 
 /* ── 启动 ───────────────────────────────── */

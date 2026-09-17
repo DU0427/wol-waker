@@ -19,18 +19,23 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
+          cache: 'npm'
 
-      - uses: actions/setup-java@v4
+      - name: Run core tests
+        run: node src/core/core.test.mjs
+
+      - uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      # 必须 v4+：v4 起 action 迁到 Node 24，v3 被运行器强制升级后会失败
+      - uses: android-actions/setup-android@v4
 
       - name: Install Android SDK 34
         run: |
@@ -50,14 +55,14 @@ jobs:
           ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wol-waker-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
 
       - name: Publish APK to release (apk-latest)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: apk-latest
           name: wol-waker 安卓测试包

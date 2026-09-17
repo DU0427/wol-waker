@@ -6,7 +6,8 @@ const config: CapacitorConfig = {
   appName: 'wol-waker',
   webDir: 'src/ui',
   android: {
-    // 配合 platforms/android-bridge.kt 里的 Wol 插件真发 UDP
+    // UDP 直发由 android/app/src/main/java/com/wolwaker/app/WolAndroidBridge.java 实现，
+    // 经 MainActivity 注入为 window.WolAndroid，再由 src/ui/native-android.js 适配成 WolNative
     allowMixedContent: false
   }
 };
